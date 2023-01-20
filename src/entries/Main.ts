@@ -1,14 +1,13 @@
 import App from "@/webgl/";
-import { Bolt, EventListeners, GL_RESIZE_TOPIC } from "bolt-gl";
-import { AssetCache } from "bolt-gl";
+import { Bolt, EventListeners, AssetCache, GL_RESIZE_TOPIC } from "bolt-gl";
 import assets from "@/webgl/globals/assets";
 export default class Main {
   private _eventListeners = EventListeners.getInstance();
   private _app: App;
   private _assetCache = AssetCache.getInstance();
   private _bolt: Bolt;
-  _width: number;
-  _height: number;
+  private _width: number;
+  private _height: number;
   private _canvas: HTMLCanvasElement;
 
   _resize() {
@@ -22,6 +21,8 @@ export default class Main {
     this._canvas = <HTMLCanvasElement>document.getElementById("experience");
     this._canvas.width = this._width;
     this._canvas.height = this._height;
+    this._app = new App();
+    this._app.start();
 
     this._bolt = Bolt.getInstance();
 
@@ -32,6 +33,11 @@ export default class Main {
     });
 
     this._assetCache.init(assets);
+
+    this._assetCache.addProgressListener((progress) => {
+      console.log(progress);
+    });
+
     await this._assetCache.load();
     this._start();
   }
@@ -39,8 +45,6 @@ export default class Main {
   _start() {
     this._eventListeners.setBoundElement(this._canvas);
     this._eventListeners.listen(GL_RESIZE_TOPIC, this._resize.bind(this));
-    this._app = new App();
     this._app.init();
-    this._app.start();
   }
 }

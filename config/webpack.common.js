@@ -43,15 +43,15 @@ module.exports = {
 				loader: "file-loader",
 			},
 			{
-				test: /\.(glsl|vs|fs|vert|frag)$/,
-				exclude: /node_modules/,
-				use: ["ts-shader-loader"],
-			},
-			{
 				test: /zcv\.wasm$/,
 				type: "javascript/auto",
 				loader: "file-loader",
 			},
+			{
+        test: /\.(glsl|vs|fs|vert|frag)$/,
+        exclude: /node_modules/,
+        use: ['raw-loader', 'glslify-loader'],
+      },
 			{
 				test: /\.ts?$/,
 				loader: "ts-loader",

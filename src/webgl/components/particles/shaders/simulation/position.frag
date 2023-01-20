@@ -45,22 +45,7 @@ void main() {
 
   vec3 newPosition = oldPosition.xyz;
 
-  float floorY = 0.8;
-
-  if( newPosition.y < floorY ) {
-
-    //vel *= 0.0;
-    newPosition.y = floorY;
-
-  } else {
-
-      newPosition = rotateAroundAxis( vec3( 1.0 * globalSpeed, 0.0, 0.0 ), vortexAxis.x ) * newPosition;
-      newPosition = rotateAroundAxis( vec3( 0.0, 1.0 * globalSpeed, 0.0 ), vortexAxis.y ) * newPosition;
-      newPosition = rotateAroundAxis( vec3( 0.0, 0.0, 1.0 * globalSpeed ), vortexAxis.z ) * newPosition;
-
-  }
-
-  newPosition += vel * ( ( 40. * globalSpeed ) * delta );
+  newPosition += vel;
 
   FragColor = vec4(newPosition, oldPosition.w);
 

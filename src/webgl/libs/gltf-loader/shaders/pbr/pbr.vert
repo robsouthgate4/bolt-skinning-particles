@@ -6,9 +6,6 @@ layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
 layout(location = 2) in vec2 aUv;
 
-layout(location = 5) in vec4 aJoints;
-layout(location = 6) in vec4 aWeights;
-
 uniform mat4 model;
 uniform mat4 view;
 uniform mat4 projection;
@@ -30,6 +27,7 @@ uniform sampler2D jointTexture;
 uniform mat4 jointTransforms[128];
 uniform float jointCount;
 
+
 mat4 getBoneMatrix(int jointNdx) {
   return mat4(
     texelFetch(jointTexture, ivec2(0, jointNdx), 0),
@@ -38,33 +36,30 @@ mat4 getBoneMatrix(int jointNdx) {
     texelFetch(jointTexture, ivec2(3, jointNdx), 0));
 }
 
+
 void main() {
 
 	vec3 position 			= aPosition;
-	vec3 worldSpacePosition	= ( model * vec4( position, 1.0 ) ).xyz;
+	vec4 worldSpacePosition	= model * vec4( position, 1.0 );
+    vec4 viewSpacePosition	= view * worldSpacePosition;
 
 	// get the world space normal
-	//Normal						= ( normal * vec4( aNormal, 0.0 ) ).xyz;
-	WorldPosition				= worldSpacePosition;
+    Normal						= ( normal * vec4( aNormal, 0.0 ) ).xyz;
+    ViewPosition				= viewSpacePosition.xyz;
+		WorldPosition				= worldSpacePosition.xyz;
 
-	Eye				= normalize( cameraPosition - worldSpacePosition);
-	WorldNormal				= ( model * vec4( aNormal, 0.0 ) ).xyz;
+	vec4 eyeDirViewSpace	= viewSpacePosition - vec4( 0, 0, 0, 1 );
+	Eye				= normalize( cameraPosition - worldSpacePosition.xyz );
+	WorldNormal				= ( model * vec4( Normal, 0.0 ) ).xyz;
 
 	mat4 skinMatrix = mat4(1.0);
 
-  // skinMatrix =  getBoneMatrix(int(aJoints.x)) * aWeights.x +
-  //                 getBoneMatrix(int(aJoints.y)) * aWeights.y +
-  //                 getBoneMatrix(int(aJoints.z)) * aWeights.z +
-  //                 getBoneMatrix(int(aJoints.w)) * aWeights.w;
+  skinMatrix =  getBoneMatrix(int(aJoints.x)) * aWeights.x +
+                  getBoneMatrix(int(aJoints.y)) * aWeights.y +
+                  getBoneMatrix(int(aJoints.z)) * aWeights.z +
+                  getBoneMatrix(int(aJoints.w)) * aWeights.w;
 
-	skinMatrix =  jointTransforms[int(aJoints.x)] * aWeights.x +
-									jointTransforms[int(aJoints.y)] * aWeights.y +
-									jointTransforms[int(aJoints.z)] * aWeights.z +
-									jointTransforms[int(aJoints.w)] * aWeights.w;
-
-	mat4 combinedModel = model * skinMatrix;
-
-	WorldNormal = (model * skinMatrix * vec4(aNormal, 0.0)).xyz;
+	mat4 combinedModelView = skinMatrix * model;
 
   gl_Position				= projection * view * combinedModel  * vec4( aPosition, 1.0 );
 

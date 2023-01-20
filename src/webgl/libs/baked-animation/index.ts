@@ -90,13 +90,12 @@ export default class BakedAnimation {
       const scaleKeyframe = transformData.scale as KeyFrame[];
 
       const t = this._getKeyFrameTransform(translationKeyframe);
-      console.log(t);
       const r = this._getKeyFrameTransform(rotationKeyframe);
       const s = this._getKeyFrameTransform(scaleKeyframe);
 
-      // transformData.node.transform.position = t;
-      // transformData.node.transform.quaternion = r;
-      // transformData.node.transform.scale = s;
+      transformData.node.transform.position = t;
+      transformData.node.transform.quaternion = r;
+      transformData.node.transform.scale = s;
     });
   }
 

@@ -10,7 +10,8 @@ in vec3 FragPosition;
 in float Random;
 
 
-uniform sampler2D mapSnow;
+uniform sampler2D mapPosition;
+
 uniform float time;
 
 out vec4 FragColor;
@@ -27,17 +28,8 @@ void main() {
     vec2 uv = gl_PointCoord.xy;
     uv.y = 1.0 - uv.y;
 
-    uv -= 0.5;
-    uv = rotate2d(Random * (PI * 2.0) + time * ( (Random + 0.5) * 1.0 )) * uv;
-    uv += 0.5;
+    if(length(uv - 0.5) > 0.5) discard;
 
-    float sdf = texture( mapSnow, uv ).r;
-    if(sdf == 0.0) discard;
-
-    vec3 color = vec3( 1.0 );
-
-    color.rgb -= vec3( 0.1 ) * Random;
-
-    FragColor = vec4( color, 1.0 );
+    FragColor = vec4( texture( mapPosition, uv ).rgb, 1.0 );
 
 }

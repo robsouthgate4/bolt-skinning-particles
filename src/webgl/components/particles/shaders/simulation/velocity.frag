@@ -15,7 +15,7 @@ uniform vec2 resolution;
 uniform sampler2D position;
 uniform sampler2D velocity;
 
-#pragma glslify: snoise3 = require(../../../../partials/snoise3)
+#pragma glslify: snoise3 = require(../partials/snoise3)
 
 vec3 curlNoise(vec3 p) {
 
@@ -40,99 +40,18 @@ vec3 curlNoise(vec3 p) {
 
 }
 
-float sdSphere( vec3 p, float s )
-{
-  return length(p)-s;
-}
-
-float map( vec3 pos ) {
-
-  return sdSphere(pos, 10.0);
-
-}
-
-vec3 calcNormalSDF(vec3 p, float eps) {
-
-	return normalize(vec3(
-		map(p + vec3(eps, 0, 0)) - map(p + vec3(-eps, 0, 0)),
-		map(p + vec3(0, eps, 0)) - map(p + vec3(0, -eps, 0)),
-		map(p + vec3(0, 0, eps)) - map(p + vec3(0, 0, -eps))
-	));
-
-}
-
-mat3 rotateAroundAxis(vec3 axis, float angle) {
-
-  float s = sin(angle);
-  float c = cos(angle);
-  float oc = 1.0 - c;
-
-  return mat3(
-    oc * axis.x * axis.x + c,
-    oc * axis.x * axis.y - axis.z * s,
-    oc * axis.z * axis.x + axis.y * s,
-    oc * axis.x * axis.y + axis.z * s,
-    oc * axis.y * axis.y + c,
-    oc * axis.y * axis.z - axis.x * s,
-    oc * axis.z * axis.x - axis.y * s,
-    oc * axis.y * axis.z + axis.x * s,
-    oc * axis.z * axis.z + c
-  );
-
-}
-
 out vec4 FragColor;
 
 void main() {
-
-  vec3 currentGravity = gravity;
 
   vec2 uv = gl_FragCoord.xy / resolution.xy;
 
   vec4 pos = texture(position, uv).xyzw; // xyz = position, w = mass
   vec3 vel = texture(velocity, uv).xyz;
 
-  vec3 currentForce = force;
+  vec3 c = curlNoise( pos.xyz * 0.4 + ( time * 0.01 ) ) * 0.001;
 
-  float mass = pos.w * 3.0;
-
-  vec3 c = curlNoise( pos.xyz * 6. + ( time * 1.0 ) ) * 0.005;
-  vec3 cLarge = curlNoise( pos.xyz * 2. + ( time * 0.1 ) ) * 0.005;
-
-  float sdfScale = 1.0;
-
-  vec3 p = (pos.xyz - vec3( 0.0, 1.5, 0.0 )) / sdfScale;
-
-  float sdfGlobe  = sdSphere( p, 1.0 );
-  vec3 sdfNormal = calcNormalSDF( p, 0.001 );
-
-
-  vec3 sdfForce = vec3( 0.0 );
-
-  float sdfForceIn = 2.0;
-  float sdfForceOut = 0.0001;
-
-  if(sdfGlobe > -0.015) {
-
-    sdfForce -= sdfNormal * sdfForceIn * sdfGlobe; // pull from outside
-
-    sdfForce += c * 0.05 * turbulence;
-
-  } else {
-
-    sdfForce -= sdfNormal * sdfForceOut * sdfGlobe; // pull from outside
-
-  }
-
-  vel += (gravity / mass) * 0.015;
-
-  vel += sdfForce * delta;
-
-  vel += c * 0.05 * turbulence;
-
-  vel += currentForce / mass;
-
-  vel += cLarge * 0.02 * turbulence;
+  vel += c;
 
   vel *= 0.96;
 

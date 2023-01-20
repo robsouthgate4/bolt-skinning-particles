@@ -32,7 +32,7 @@ void main() {
 
     vec3 pos = aPosition;
 
-    pos += shakeOffset;
+    //pos += shakeOffset;
 
     vec3 transformed  = pos + newPos.xyz;
 
@@ -47,8 +47,10 @@ void main() {
 
     //outScale += scale * 0.7;
 
-    gl_PointSize = outScale;
+    float scale = 4.0;
 
-    gl_PointSize *= ( outScale / - mvPosition.z );
+    gl_PointSize = scale;
+
+    gl_PointSize *= ( scale / - mvPosition.z );
 
 }
