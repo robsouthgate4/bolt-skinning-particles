@@ -4,7 +4,7 @@ const assets = {
   gltf: {
     character: {
       // draco compressed
-      url: "/static/models/gltf/character/running-woman2.glb",
+      url: "/static/models/gltf/character/running-woman2-draco.glb",
       type: AssetType.GLTF,
     },
   },

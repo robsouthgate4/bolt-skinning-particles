@@ -11,21 +11,15 @@ import {
 
 import vertexShader from "./shaders/vertexShader.glsl";
 import fragmentShader from "./shaders/fragmentShader.glsl";
-import { GL_UPDATE_TOPIC } from "@/common/events";
 
 
 export default class CompositionDrawState extends DrawState {
-
-  private _eventListeners = EventListeners.getInstance();
-  private _gl: WebGL2RenderingContext;
 
   constructor() {
 
     const bolt = Bolt.getInstance();    
     
     super(bolt);
-
-    this._gl = bolt.getContext();
     
     const triangleMesh = this.createMesh();
 

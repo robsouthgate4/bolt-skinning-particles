@@ -10,7 +10,6 @@ export default class BakedAnimation {
 
   constructor(channels: Channel) {
     this._channels = channels;
-    console.log("channels", channels);
   }
 
   _setMinAndMaxTime() {

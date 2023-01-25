@@ -28,8 +28,8 @@ export default class Main {
     this._bolt = Bolt.getInstance();
 
     this._bolt.init(this._canvas, {
-      antialias: true,
-      dpi: Math.min(2, window.devicePixelRatio),
+      antialias: false,
+      dpi: Math.min(1, window.devicePixelRatio),
       powerPreference: "high-performance",
       alpha: true,
       preserveDrawingBuffer: false,
@@ -38,7 +38,7 @@ export default class Main {
 
     this._assetCache.init(assets);
 
-    await this._assetCache.load();
+    await this._assetCache.load(10);
 
     this._app = new App();
     this._app.init();

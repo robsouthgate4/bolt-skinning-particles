@@ -44,7 +44,7 @@ export default class BloomDrawState extends DrawState {
   }
 
   public resize(data: { detail: { width: number, height: number }  }): void {
-    console.log(data);
+    //console.log(data);
   }
 
   private createMesh(): Mesh {

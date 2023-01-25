@@ -48,14 +48,14 @@ export default class PBRProgram extends Program {
 
     this.activate();
 
-    this.setFloat("metalness", 0.9);
+    this.setFloat("metalness", 1);
     this.setFloat("roughness", 0);
     this.setFloat("specular", 1);
     this.setFloat("exposure", 1);
     this.setFloat("normalHeight", 0);
 
-    this.setVector4("albedoColor", vec4.fromValues(0.2, 0.1, 0.1, 1));
-    this.setVector2("normalUVScale", vec2.fromValues(1.0, 1.0));
+    this.setVector4("albedoColor", vec4.fromValues(1, 1, 1, 1));
+    this.setVector2("normalUVScale", vec2.fromValues(1, 1));
   }
 
   render() {

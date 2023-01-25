@@ -50,11 +50,10 @@ export default class extends Base {
     this._controls = new Controls(this._cameraMain);
 
     this._bolt.setCamera(this._cameraMain);
-    this._bolt.enableDepth();
 
-    this._sceneFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
-    this._bloomSceneFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
-    this._bloomRenderFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
+    this._sceneFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true, samples: 4  });
+    this._bloomSceneFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true, samples: 4 });
+    this._bloomRenderFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true, samples: 4 });
     this._maskFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
 
     this._particleSimulation = new ParticlesSim();
@@ -109,9 +108,6 @@ export default class extends Base {
         .uniformTexture("mapPosition", this._particleSimulation.getPositionTexture())
         .draw();
 
-      this._floorDraw
-        .draw();
-      
       this._characterDraw
         .uniformFloatCustom("mask", 0)
         .draw();
@@ -144,7 +140,7 @@ export default class extends Base {
       .uniformTexture("mapBloom", this._bloomSceneFBO.targetTexture)
       .draw();
 
-      this._characterDraw.update({ elapsed, delta });    
+    this._characterDraw.update({ elapsed, delta });
 
   }
 

@@ -7,14 +7,9 @@ import { AssetCache, Bolt, Channel, CLAMP_TO_EDGE, DrawSet, DrawState, EventList
 
 export default class CharacterDrawState extends DrawState {
     private _animation: BakedAnimation;
-    private _eventListeners = EventListeners.getInstance();
     private _animationsBound = false;
-    private _scene: Node;
-    private _test: DrawSet;
     private _radianceMap: Texture2D;
     private _irradianceMap: Texture2D;
-    private _program: PBRProgram;
-    private _textureSampler: TextureSampler;
     private _prog: PBRProgram;
 
     constructor(scene: Node, animations: Channel, bolt: Bolt) {
@@ -23,13 +18,8 @@ export default class CharacterDrawState extends DrawState {
 
         const assetCache = AssetCache.getInstance();
 
-        this._textureSampler = new TextureSampler({
-          wrapS: CLAMP_TO_EDGE,
-          wrapT: CLAMP_TO_EDGE,
-        });
-
         this._radianceMap = assetCache.get<Texture2D>(assets.hdr.radiance);
-
+        
         this._irradianceMap = assetCache.get<Texture2D>(
             assets.hdr.irradiance
         );
@@ -51,7 +41,7 @@ export default class CharacterDrawState extends DrawState {
                 }
             }
         });
-
+        
         this.setNode(scene);
 
         this._animation = new BakedAnimation(animations);
