@@ -48,19 +48,6 @@ export default class PBRProgram extends Program {
 
     this.activate();
 
-    this.mapEnvironment = mapEnvironment;
-    this.mapIrradiance = mapIrradiance;
-
-    this.setTexture("mapEnvironment", this.mapEnvironment, 3);
-    this.mapEnvironment.bind(3);
-    this.setTexture("mapIrradiance", this.mapIrradiance, 4);
-    this.mapIrradiance.bind(4);
-
-    // this.setTexture("mapAlbedo", mapAlbedo);
-    // this.setTexture("mapRoughness", mapRoughness);
-    // this.setTexture("mapNormal", mapNormal);
-    // this.setTexture("mapAO", mapAO);
-
     this.setFloat("metalness", 0.9);
     this.setFloat("roughness", 0);
     this.setFloat("specular", 1);

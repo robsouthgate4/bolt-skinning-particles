@@ -1,7 +1,7 @@
 import Stats from "stats.js";
 
 import { glSettings } from "@webgl/globals/constants";
-import { EventListeners } from "bolt-gl";
+import { Clock, EventListeners } from "bolt-gl";
 import { GL_UPDATE_TOPIC } from "../common/events";
 
 const { DEBUG_FPS } = glSettings;
@@ -15,10 +15,11 @@ export default abstract class Base {
   now: number;
   width: number;
   height: number;
-  delta: number;
+  delta = 0;
   currentTime: number;
   lastTime: number;
-  eventListeners = EventListeners.getInstance();
+  _eventListeners = EventListeners.getInstance();
+  _clock = new Clock();
 
   constructor() {
     this.now = Date.now();
@@ -43,8 +44,9 @@ export default abstract class Base {
   }
 
   start() {
+    this._clock.start();
     this.isRunning = true;
-    this.run(0);
+    this.run();
   }
 
   destroy() {
@@ -69,23 +71,22 @@ export default abstract class Base {
 
   abstract lateUpdate(elapsed: number, delta: number): void;
 
-  run(timestamp: number) {
+  run() {
     const { DEBUG_FPS } = glSettings;
 
     if (DEBUG_FPS) this.stats?.begin();
 
-    this.elapsed = timestamp * 0.001;
-    this.delta = this.elapsed - this.lastTime;
-    this.lastTime = this.elapsed;
-
-    this.eventListeners.publish(GL_UPDATE_TOPIC, {
-      elapsed: this.elapsed,
-      delta: this.delta,
-    });
+    this.delta = this._clock.getDelta();
+    this.elapsed = this._clock.getElapsedTime();
 
     this.earlyUpdate(this.elapsed, this.delta);
     this.update(this.elapsed, this.delta);
     this.lateUpdate(this.elapsed, this.delta);
+
+    this._eventListeners.publish(GL_UPDATE_TOPIC, {
+      elapsed: this.elapsed,
+      delta: this.delta,
+    });
 
     if (DEBUG_FPS) this.stats?.end();
 

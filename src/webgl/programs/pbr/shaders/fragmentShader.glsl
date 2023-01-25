@@ -14,6 +14,8 @@ uniform float		exposure;
 uniform float		gamma;
 uniform vec2 		normalUVScale;
 
+uniform float mask;
+
 in vec3		Normal;
 in vec3		Position;
 in vec3		Eye;
@@ -252,7 +254,7 @@ void main() {
 	color				= pow( color, vec3( 1.0 / gamma ) );
 
 	// output the fragment color
-	FragColor		= vec4(color, 1.0 );
+	FragColor		= vec4( mix(color, vec3(0.0), mask), 1.0 );
 
 }
 

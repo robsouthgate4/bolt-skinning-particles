@@ -10,6 +10,7 @@ export default class BakedAnimation {
 
   constructor(channels: Channel) {
     this._channels = channels;
+    console.log("channels", channels);
   }
 
   _setMinAndMaxTime() {
@@ -41,9 +42,9 @@ export default class BakedAnimation {
   }
 
   _getKeyFrameTransform(keyframes: KeyFrame[]) {
+
     // get the previous and next keyframes for each transform
     const nextPrevKeyFrames = this._getPrevAndNextKeyFrames(keyframes);
-
     const progression =
       (this._animationTime - nextPrevKeyFrames.prevKeyFrame.time) /
       (nextPrevKeyFrames.nextKeyFrame.time -

@@ -2,104 +2,90 @@ import Base from "@webgl/Base";
 import {
   Bolt,
   CameraPersp,
-  DrawSet,
-  Node,
   Orbit,
-  Texture2D,
   AssetCache,
-  waitRAF,
+  GLTFScene,
+  FBO,
+  RGBA,
 } from "bolt-gl";
 
-import BakedAnimation from "./libs/baked-animation";
-import Floor from "@/webgl/drawSets/floor";
-import PBRProgram from "./programs/pbr";
+
 import CameraMain from "./globals/CameraMain";
 import Controls from "./globals/Controls";
 import assets from "./globals/assets";
-import { GLTFScene } from "./libs/gltf-loader";
-import Particles from "./components/particles";
+import ParticlesDrawState from "./components/particles-draw";
+import CharacterDrawState from "./components/character-draw";
+import ParticlesSim from "./components/particles-sim";
+import FloorDrawState from "./components/floor-draw";
+import CompositionDrawState from "./components/composition-draw";
+import BloomDrawState from "./components/bloom-draw";
 
 export default class extends Base {
-  private _canvas: HTMLCanvasElement;
   private _cameraMain: CameraPersp;
-  private _bolt: Bolt;
+  private _bolt = Bolt.getInstance();
   private _controls: Orbit;
-  private _scene: Node;
-
-  private _characterAnimation: BakedAnimation;
-  private _cubeDS: DrawSet;
-  private _floor: Floor;
   private _assetCache = AssetCache.getInstance();
   private _gl: WebGL2RenderingContext;
-  private _animationsBound: boolean;
-  private _particles: Particles;
+  private _initialised: boolean;
+  private _characterDraw: CharacterDrawState;
+  private _particleSimulation: ParticlesSim;
+  private _particlesDraw: ParticlesDrawState;
+  private _floorDraw: FloorDrawState;
+  private _sceneFBO: FBO;
+  private _compositionDraw: CompositionDrawState;
+  private _bloomSceneFBO: any;
+  private _maskFBO: FBO;
+  private _bloomDraw: BloomDrawState;
+  private _bloomRenderFBO: FBO;
 
   constructor() {
     super();
   }
 
-  async init() {
-    this._bolt = Bolt.getInstance();
+  init() {
     this._gl = this._bolt.getContext();
 
     this._cameraMain = CameraMain.getInstance();
 
     this._controls = new Controls(this._cameraMain);
 
-    this._bolt.setViewPort(
-      0,
-      0,
-      this._gl.drawingBufferWidth,
-      this._gl.drawingBufferHeight
-    );
-
     this._bolt.setCamera(this._cameraMain);
     this._bolt.enableDepth();
 
+    this._sceneFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
+    this._bloomSceneFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
+    this._bloomRenderFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
+    this._maskFBO = new FBO({ width: 1, height: 1, format: RGBA, internalFormat: RGBA, depth: true });
+
+    this._particleSimulation = new ParticlesSim();
+    this._floorDraw = new FloorDrawState();
+    this._compositionDraw = new CompositionDrawState();
+    this._particlesDraw = new ParticlesDrawState();
+    this._bloomDraw = new BloomDrawState();
+
     this.initCharacter();
-    this._floor = new Floor(20);
-    this._particles = new Particles();
+    this.resize();
+
   }
 
   private initCharacter() {
-    this._animationsBound = false;
 
-    const gltfAssetCache = this._assetCache.get<GLTFScene>(
+    const gltf = this._assetCache.get<GLTFScene>(
       assets.gltf.character
     );
 
-    const gltfAnimations = gltfAssetCache.loader.animations;
+    const gltfAnimations = gltf.loader.animations;
+    this._characterDraw = new CharacterDrawState(gltf.scene, gltfAnimations, this._bolt)
 
-    const radianceMap = this._assetCache.get<Texture2D>(assets.hdr.radiance);
-
-    const irradianceMap = this._assetCache.get<Texture2D>(
-      assets.hdr.irradiance
-    );
-
-    this._scene = gltfAssetCache.scene;
-
-    this._scene.traverse((node: Node) => {
-      if (node instanceof DrawSet) {
-        const originalProg = node.program;
-        const prog = new PBRProgram({
-          mapEnvironment: radianceMap,
-          mapIrradiance: irradianceMap,
-        });
-        node.program = prog;
-        node.program.name = "pbr program";
-        originalProg.delete();
-      }
-    });
-
-    waitRAF().then(() => {
-      this._characterAnimation = new BakedAnimation(gltfAnimations);
-      this._characterAnimation.runAnimation("Armature|mixamo.com|Layer0");
-      this._animationsBound = true;
-    });
+    this._initialised = true;
   }
 
   resize() {
     this._bolt.resizeCanvasToDisplay();
+    this._sceneFBO.resize(this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+    this._maskFBO.resize(this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+    this._bloomSceneFBO.resize(this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
+    this._bloomRenderFBO.resize(this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
     this._cameraMain.updateProjection(window.innerWidth / window.innerHeight);
   }
 
@@ -108,24 +94,62 @@ export default class extends Base {
   }
 
   update(elapsed: number, delta: number) {
-    if (!this._animationsBound) return;
+    if (!this._initialised) return;
     this._controls.update();
-    this._bolt.setViewPort(
-      0,
-      0,
-      this._gl.drawingBufferWidth,
-      this._gl.drawingBufferHeight
-    );
-    this._bolt.clear(0.05, 0.05, 0.05, 0);
 
-    this._characterAnimation.update(elapsed, delta);
+    this._particleSimulation.update({ elapsed, delta });
 
-    this._bolt.draw(this._scene);
+    {
+      this._sceneFBO.bind();
 
-    this._bolt.draw(this._floor);
+      this._bolt.setViewPort(0, 0, this._gl.drawingBufferWidth, this._gl.drawingBufferHeight);
 
-    this._particles.render({ elapsed, delta });
-    this._bolt.draw(this._particles);
+      this._particlesDraw
+        .clear(0, 0, 0, 0)
+        .uniformTexture("mapPosition", this._particleSimulation.getPositionTexture())
+        .draw();
+
+      this._floorDraw
+        .draw();
+      
+      this._characterDraw
+        .uniformFloatCustom("mask", 0)
+        .draw();
+
+      this._sceneFBO.unbind();
+    }
+
+    {
+
+      this._bloomSceneFBO.bind();
+      this._particlesDraw
+        .clear(0, 0, 0, 0)
+        .uniformTexture("mapPosition", this._particleSimulation.getPositionTexture())
+        .draw();
+
+      this._characterDraw
+        .uniformFloatCustom("mask", 1)
+        .draw();
+      this._bloomSceneFBO.unbind();
+
+      this._bloomRenderFBO.bind();
+      this._bloomDraw
+        .uniformTexture("map", this._bloomSceneFBO.targetTexture)
+        .draw();
+      this._bloomRenderFBO.unbind();
+    }
+
+    this._compositionDraw
+      .uniformTexture("map", this._sceneFBO.targetTexture)
+      .uniformTexture("mapBloom", this._bloomSceneFBO.targetTexture)
+      .draw();
+
+      this._characterDraw.update({ elapsed, delta });    
+
+  }
+
+  start(): void {
+    super.start();
   }
 
   lateUpdate(elapsed: number, delta: number) {
