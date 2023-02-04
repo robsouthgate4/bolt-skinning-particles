@@ -1,5 +1,6 @@
 import App from "@/webgl/";
-import { Bolt, EventListeners, AssetCache, GL_RESIZE_TOPIC } from "bolt-gl";
+import { Bolt, EventListeners, GL_RESIZE_TOPIC } from "bolt-gl";
+import AssetCache from "@/webgl/libs/asset-cache";
 import assets from "@/webgl/globals/assets";
 export default class Main {
   private _eventListeners = EventListeners.getInstance();
@@ -28,17 +29,18 @@ export default class Main {
     this._bolt = Bolt.getInstance();
 
     this._bolt.init(this._canvas, {
-      antialias: false,
-      dpi: Math.min(1, window.devicePixelRatio),
+      antialias: true,
+      dpi: Math.min(2, window.devicePixelRatio),
       powerPreference: "high-performance",
       alpha: true,
       preserveDrawingBuffer: false,
+      premultipliedAlpha: false,
       stencil: false,
     });
 
     this._assetCache.init(assets);
 
-    await this._assetCache.load(10);
+    await this._assetCache.load(2);
 
     this._app = new App();
     this._app.init();

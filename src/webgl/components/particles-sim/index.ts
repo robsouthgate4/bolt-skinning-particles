@@ -1,26 +1,31 @@
 import { getRandomPointInSphere } from "@/webgl/utils";
-import { Bolt, CLAMP_TO_EDGE, FBO, FBOSim, FBOSwapDefinition, FLOAT, HALF_FLOAT, NEAREST, Program, RGBA, RGBA16F, RGBA32f, Texture2D } from "bolt-gl";
+import { Bolt, CLAMP_TO_EDGE, FBO, FBOSwapDefinition, FLOAT, HALF_FLOAT, LUMINANCE, NEAREST, Program, RGBA, RGBA16F, RGBA32f, Texture2D } from "bolt-gl";
 
 import velocityFragmentShader from "./shaders/simulation/velocity.frag";
 import positionFragmentShader from "./shaders/simulation/position.frag";
+import FBOSim from "@/webgl/libs/fbo-sim";
 
-const COUNT = 1000;
+const COUNT = 40000;
 
 export default class ParticlesSim {
 
   private _fbosim: FBOSim;
   private _count: number;
   private _isIos: boolean;
-  private _initPosition: Texture2D;
+  private _initData: Texture2D;
   private _bolt = Bolt.getInstance();
   private _velocityDefinition: FBOSwapDefinition;
   private _positionDefinition: FBOSwapDefinition
   private _velocityProgram: Program | undefined;
   private _positionProgram: Program | undefined;
+  private _jointData: Texture2D;
+  private _gl: WebGL2RenderingContext;
 
   constructor() {
 
     this._fbosim = new FBOSim(this._bolt, false);
+    
+    this._gl = this._bolt.getContext();
 
     const size = Math.floor(Math.sqrt(COUNT));
 
@@ -32,15 +37,14 @@ export default class ParticlesSim {
     const posArray = new Float32Array(this._count * 4);
 
     for (let i = 0; i < this._count; i++) {
-      const pos = getRandomPointInSphere(1);
       const stride = i * 4;
-      posArray[stride] = pos[0];
-      posArray[stride + 1] = pos[1] + 1;
-      posArray[stride + 2] = pos[2];
-      posArray[stride + 3] = 0;
+      posArray[stride] = (Math.random() * 2 - 1) * 0.1;
+      posArray[stride + 1] = (Math.random() * 2 - 1) * 0.12;
+      posArray[stride + 2] = (Math.random() * 2 - 1) * 0.02 - 0.1;
+      posArray[stride + 3] = 0.1 + Math.random() * 0.3;
     }
 
-    this._initPosition = new Texture2D({
+    this._initData = new Texture2D({
       width: size,
       height: size,
       internalFormat: RGBA32f,
@@ -51,7 +55,29 @@ export default class ParticlesSim {
       generateMipmaps: false,
     });
 
-    this._initPosition.setFromData(posArray, size, size);
+    this._initData.setFromData(posArray, size, size);
+
+    this._jointData = new Texture2D({
+      width: size,
+      height: size,
+      internalFormat: this._gl.R32F,
+      format: this._gl.RED,
+      type: FLOAT,
+      minFilter: NEAREST,
+      magFilter: NEAREST,
+      generateMipmaps: false,
+    });
+
+    const jointArray = new Float32Array(this._count * 1);
+
+    for (let i = 0; i < this._count; i++) {
+      const stride = i * 1;
+      // create random int between 0 and 65
+      const jointID = Math.floor(Math.random() * 63);
+      jointArray[stride] = jointID;
+    }
+
+    this._jointData.setFromData(jointArray, size, size);
 
     const velocity = this.createDoubleFBO({
       size,
@@ -77,7 +103,7 @@ export default class ParticlesSim {
       requiresSwap: true,
       shader: positionFragmentShader,
       passName: "position",
-      initialTexture: this._initPosition,
+      initialTexture: this._initData,
     };
 
     this._fbosim.bindFBOs([this._positionDefinition, this._velocityDefinition]);
@@ -96,6 +122,8 @@ export default class ParticlesSim {
     if (this._positionProgram) {
       this._positionProgram.activate();
       this._positionProgram.setFloat("globalSpeed", 1);
+      this._positionProgram.setTexture("initPosition", this._initData);
+      this._positionProgram.setTexture("jointData", this._jointData);
     }
 
   }
@@ -131,6 +159,14 @@ export default class ParticlesSim {
     }
     this._fbosim.compute();
 
+  }
+
+  public get positionProgram() {
+    return this._positionProgram;
+  }
+
+  public get velocityProgram() {
+    return this._velocityProgram;
   }
 
   public getPositionTexture() {

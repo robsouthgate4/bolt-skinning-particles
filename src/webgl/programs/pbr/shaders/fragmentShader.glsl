@@ -1,9 +1,10 @@
+precision mediump float;
 
-precision highp float;
-
-uniform sampler2D jointTexture;
 uniform sampler2D mapEnvironment;
+uniform sampler2D jointTexture;
+uniform sampler2D mapData;
 uniform sampler2D mapIrradiance;
+uniform sampler2D mapPrefilter;
 
 uniform float		specular;
 uniform float		normalHeight;
@@ -13,6 +14,8 @@ uniform mat4 view;
 uniform float		exposure;
 uniform float		gamma;
 uniform vec2 		normalUVScale;
+uniform vec2 		resolution;
+uniform vec3 		albedoColor;
 
 uniform float mask;
 
@@ -35,6 +38,20 @@ float toLinear(float v) {
   return pow(v, gamma);
 }
 
+float rand(vec2 n) { 
+	return fract(sin(dot(n, vec2(12.9898, 4.1414))) * 43758.5453);
+}
+
+float noise(vec2 p){
+	vec2 ip = floor(p);
+	vec2 u = fract(p);
+	u = u*u*(3.0-2.0*u);
+	
+	float res = mix(
+		mix(rand(ip),rand(ip+vec2(1.0,0.0)),u.x),
+		mix(rand(ip+vec2(0.0,1.0)),rand(ip+vec2(1.0,1.0)),u.x),u.y);
+	return res*res;
+}
 vec2 toLinear(vec2 v) {
   return pow(v, vec2(gamma));
 }
@@ -76,10 +93,9 @@ vec4 toLinear(vec4 v) {
 	vec3 getAlbedo() {
 		return toLinear( texture(mapAlbedo, Uv).rgb );
 	}
-	#else
-	uniform vec4 albedoColor;
+#else
 	vec3 getAlbedo() {
-		return toLinear( albedoColor.rgb );
+		return toLinear( albedoColor );
 	}
 #endif
 
@@ -89,6 +105,61 @@ vec4 toLinear(vec4 v) {
 		return texture(mapAO, Uv).rgb;
 	}
 #endif
+
+vec3 rgb2hsv(vec3 c)
+{
+	vec4 K = vec4(0.0, -1.0/3.0, 2.0/3.0, -1.0);
+	vec4 p = mix(vec4(c.bg, K.wz), vec4(c.gb, K.xy), step(c.b, c.g));
+	vec4 q = mix(vec4(p.xyw, c.r), vec4(c.r, p.yzx), step(p.x, c.r));
+	
+	float d = q.x - min(q.w, q.y);
+	float e = 1.0e-10;
+	return vec3(abs(q.z + (q.w - q.y) / (6.0 * d + e)), d / (q.x + e), q.x);
+}
+
+vec3 hsv2rgb(vec3 c)
+{
+	vec4 K = vec4(1.0, 2.0/3.0, 1.0/3.0, 3.0);
+	vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+	return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
+// vec3 getRefraction() {
+// 	vec2 screenUV = gl_FragCoord.xy / resolution;
+// 	vec3 viewDir = normalize(Eye);
+
+// 	vec3 color = vec3(0.0);
+
+// 	const float ITERATIONS = 10.0;
+
+// 	float iorRed = 1.15;
+// 	float iorGreen = 1.18;
+// 	float iorBlue = 1.2;
+
+// 	for (float i = 0.0; i < ITERATIONS; i++) {
+
+// 		float slide = i / ITERATIONS * 0.05;
+
+// 		vec3 refractDirRed = refract(viewDir, WorldNormal, 1.0 / iorRed);
+// 		vec3 refractDirGreen = refract(viewDir, WorldNormal, 1.0 / iorGreen);
+// 		vec3 refractDirBlue = refract(viewDir, WorldNormal, 1.0 / iorBlue);
+
+// 		color.r += texture(mapRefraction, (screenUV + noise( screenUV * 10000. ) * 0.005) + refractDirRed.xy * (slide * 1.0) * 0.4).r;
+// 		color.g += texture(mapRefraction, (screenUV + noise( screenUV * 10000. ) * 0.005) + refractDirGreen.xy * (slide * 2.0) * 0.4).g;
+// 		color.b += texture(mapRefraction, (screenUV + noise( screenUV * 10000. ) * 0.005) + refractDirBlue.xy * (slide * 3.0) * 0.4).b;
+		
+// 	}
+
+// 	color /= ITERATIONS;
+
+// 	color = rgb2hsv(color);
+// 	color.r *= 1.2;
+// 	color.g *= 1.8;
+// 	color = hsv2rgb(color);
+
+// 	return toLinear(color);
+// }
+
 
 // Filmic tonemapping from
 // http://filmicgames.com/archives/75
@@ -229,6 +300,8 @@ vec3 getPbr(vec3 N, vec3 V, vec3 baseColor, float roughness, float metalness, fl
 
 void main() {
 
+	vec2 screenUV = (gl_FragCoord.xy / resolution.xy) * 2.0 - 1.0;
+
 	vec3 N 				= getNormal();
 	vec3 V 				= normalize( Eye );
 	vec3 albedoColor	= getAlbedo();
@@ -253,8 +326,11 @@ void main() {
 	//gamma correction
 	color				= pow( color, vec3( 1.0 / gamma ) );
 
+	vec4 col = texture( mapData, Uv);
+
 	// output the fragment color
-	FragColor		= vec4( mix(color, vec3(0.0), mask), 1.0 );
+	FragColor		= vec4( mix( vec3( 0.0 ), color, mask ), 1.0 );
+
 
 }
 

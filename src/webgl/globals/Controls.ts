@@ -5,9 +5,9 @@ export default class Controls extends Orbit {
     super(camera, {
       zoomSpeed: 0.1,
       maxRadius: 10,
-      minRadius: 2,
-      rotateSpeed: 1,
-      ease: 0.1,
+      minRadius: 0.5,
+      rotateSpeed: 3,
+      ease: 0.05,
       panSpeed: 0.1,
     });
   }

@@ -9,6 +9,7 @@ layout(location = 3) in float aRandom;
 
 layout(location = 4) in vec2 reference;
 layout(location = 5) in float scale;
+layout(location = 6) in float jointID;
 
 
 uniform mat4 projection;
@@ -17,36 +18,32 @@ uniform mat4 view;
 uniform mat4 lightSpaceMatrix;
 uniform float particleScale;
 uniform float time;
-
 uniform vec3 shakeOffset;
-
 uniform sampler2D mapPosition;
 
-out float Random;
+out float Life;
 
 void main() {
 
-    Random = aRandom;
+    vec4 newPos = texture(mapPosition, reference).xyzw; // xyz = position, w = life
 
-    vec4 newPos = texture(mapPosition, reference).xyzw; // xyz = position, w = scale
+    Life = newPos.w;
 
     vec3 pos = aPosition;
 
-    vec3 transformed  = pos + newPos.xyz;
+    vec3 transformed = newPos.xyz;
 
     mat4 modelView = view * model;
-    mat4 mvp = projection * modelView;
+    mat4 mvp = projection * modelView;  
 
     vec4 mvPosition = modelView * vec4( transformed, 1.0 );
 
     gl_Position = projection * view * model * vec4( transformed, 1.0 );
 
-    float outScale = scale * particleScale;
+    float outScale = scale * 4.0;
 
-    float scale = 4.0;
+    gl_PointSize = outScale;
 
-    gl_PointSize = scale;
-
-    gl_PointSize *= ( scale / - mvPosition.z );
+    gl_PointSize *= ( outScale / - mvPosition.z );
 
 }

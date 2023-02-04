@@ -3,7 +3,7 @@ import { Bolt, DrawSet, DrawState, LINES, Mesh, Program } from "bolt-gl";
 import vertexShader from "./shaders/axis.vert";
 import fragmentShader from "./shaders/axis.frag";
 
-const DIMENSIONS = 20;
+const DIMENSIONS = 50;
 
 export default class FloorDrawState extends DrawState {
     constructor() {

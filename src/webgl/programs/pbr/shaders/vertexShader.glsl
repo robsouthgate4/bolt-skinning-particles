@@ -1,6 +1,6 @@
 #version 300 es
 
-precision highp float;
+precision mediump float;
 
 layout(location = 0) in vec3 aPosition;
 layout(location = 1) in vec3 aNormal;
@@ -30,7 +30,7 @@ uniform sampler2D jointTexture;
 uniform mat4 jointTransforms[128];
 uniform float jointCount;
 
-mat4 getBoneMatrix(int jointNdx) {
+mat4 getJointMatrix(int jointNdx) {
   return mat4(
     texelFetch(jointTexture, ivec2(0, jointNdx), 0),
     texelFetch(jointTexture, ivec2(1, jointNdx), 0),
@@ -44,29 +44,42 @@ void main() {
 	vec3 worldSpacePosition	= ( model * vec4( position, 1.0 ) ).xyz;
 
 	// get the world space normal
-	//Normal						= ( normal * vec4( aNormal, 0.0 ) ).xyz;
+	Normal						= ( normal * vec4( aNormal, 0.0 ) ).xyz;
 	WorldPosition				= worldSpacePosition;
 
 	Eye				= normalize( cameraPosition - worldSpacePosition);
-	WorldNormal				= ( model * vec4( aNormal, 0.0 ) ).xyz;
+	vec3 N				= ( model * vec4( aNormal, 0.0 ) ).xyz;
 
-	mat4 skinMatrix = mat4(1.0);
+	mat4 skinMatrix = mat4(0.0);
 
-	skinMatrix =  getBoneMatrix(int(aJoints.x)) * aWeights.x +
-					getBoneMatrix(int(aJoints.y)) * aWeights.y +
-					getBoneMatrix(int(aJoints.z)) * aWeights.z +
-					getBoneMatrix(int(aJoints.w)) * aWeights.w;
+	mat4 boneMatX = getJointMatrix(int(aJoints.x));
+	mat4 boneMatY = getJointMatrix(int(aJoints.y));
+	mat4 boneMatZ = getJointMatrix(int(aJoints.z));
+	mat4 boneMatW = getJointMatrix(int(aJoints.w));
 
-	// skinMatrix =  jointTransforms[int(aJoints.x)] * aWeights.x +
-	// 								jointTransforms[int(aJoints.y)] * aWeights.y +
-	// 								jointTransforms[int(aJoints.z)] * aWeights.z +
-	// 								jointTransforms[int(aJoints.w)] * aWeights.w;
+	// mat4 boneMatX = jointTransforms[int(aJoints.x)];
+	// mat4 boneMatY = jointTransforms[int(aJoints.y)];
+	// mat4 boneMatZ = jointTransforms[int(aJoints.z)];
+	// mat4 boneMatW = jointTransforms[int(aJoints.w)];
 
-	mat4 combinedModel = model * skinMatrix;
+	skinMatrix += boneMatX * aWeights.x;
+	skinMatrix += boneMatY * aWeights.y;
+	skinMatrix += boneMatZ * aWeights.z;
+	skinMatrix += boneMatW * aWeights.w;
 
-	WorldNormal = (model * skinMatrix * vec4(aNormal, 0.0)).xyz;
+	WorldNormal = (skinMatrix * vec4(N, 0.0)).xyz;
 
-  	gl_Position				= projection * view * combinedModel  * vec4( aPosition, 1.0 );
+	vec4 bindPos = vec4(position, 1.0);
+	vec4 transformed = vec4(0.0);
+	
+	transformed += boneMatX * bindPos * aWeights.x;
+	transformed += boneMatY * bindPos * aWeights.y;
+	transformed += boneMatZ * bindPos * aWeights.z;
+	transformed += boneMatW * bindPos * aWeights.w;
+
+	vec3 pos = transformed.xyz;
+
+  	gl_Position	= projection * view * model * vec4( pos, 1.0 );
 
 	Uv			= aUv;
 }

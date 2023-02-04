@@ -10,6 +10,10 @@ uniform vec2 resolution;
 
 uniform sampler2D position;
 uniform sampler2D velocity;
+uniform sampler2D initPosition;
+uniform sampler2D jointData;
+
+uniform vec3 jointPositions[64];
 
 uniform vec3 vortexAxis;
 
@@ -39,6 +43,10 @@ void main() {
 
   vec2 uv = gl_FragCoord.xy / resolution.xy;
 
+  vec4 jointDatas = texture(jointData, uv);
+
+  vec4 initPosition = texture(initPosition, uv);
+
   vec4 oldPosition = texture(position, uv).xyzw;
 
   vec3 vel = texture(velocity, uv).rgb;
@@ -47,6 +55,16 @@ void main() {
 
   newPosition += vel;
 
-  FragColor = vec4(newPosition, oldPosition.w);
+  float life = oldPosition.w;
+
+  if (life < 0.0) {
+    life = initPosition.w;
+    newPosition = jointPositions[int(jointDatas.r)] + initPosition.xyz;
+  } else {
+    life -= delta * 0.75;
+  }
+  
+
+  FragColor = vec4(newPosition, life);
 
 }

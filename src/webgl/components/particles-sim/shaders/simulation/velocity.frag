@@ -5,11 +5,6 @@ precision highp float;
 
 uniform float time;
 uniform float delta;
-uniform vec3 offset;
-uniform vec3 vortexAxis;
-uniform float turbulence;
-uniform vec3 gravity;
-uniform vec3 force;
 uniform vec2 resolution;
 
 uniform sampler2D position;
@@ -46,14 +41,16 @@ void main() {
 
   vec2 uv = gl_FragCoord.xy / resolution.xy;
 
-  vec4 pos = texture(position, uv).xyzw; // xyz = position, w = mass
+  vec4 pos = texture(position, uv).xyzw; // xyz = position, w = life
   vec3 vel = texture(velocity, uv).xyz;
 
-  vec3 c = curlNoise( pos.xyz * 20.0 + ( time * 0.1 ) ) * 0.01 * delta;
+  vec3 c = curlNoise( (pos.xyz * 1.0) + pos.w * 5.75 ) * 0.05;
 
-  vel += c;
+  vel += c * delta;
 
-  vel *= 0.96;
+  vel += vec3( 0.0, 0.03, 0.0) * delta;
+
+  vel *= 0.99;
 
   FragColor = vec4( vel, 1.0 );
 

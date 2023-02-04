@@ -5,7 +5,6 @@ precision highp float;
 uniform sampler2D map;
 uniform sampler2D mapBloom;
 
-
 in vec2 Uv;
 
 out vec4 FragColor;
@@ -13,7 +12,8 @@ out vec4 FragColor;
 void main() {
 
     vec4 outColor = texture(map, Uv);
-    vec4 bloomColor = texture(mapBloom, Uv);
-    FragColor = outColor + bloomColor * 0.3;
+    vec4 bloomColor = texture(mapBloom, Uv, 5.0);
+
+    FragColor = outColor + (bloomColor * 0.3);
 
 }

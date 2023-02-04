@@ -4,9 +4,14 @@ const assets = {
   gltf: {
     character: {
       // draco compressed
-      url: "/static/models/gltf/character/running-woman2-draco.glb",
+      url: "/static/models/gltf/character/running-woman2-draco-2.glb",
       type: AssetType.GLTF,
     },
+    refractionElements: {
+      // draco compressed
+      url: "/static/models/gltf/refractionElements.glb",
+      type: AssetType.GLTF,
+    }
   },
   hdr: {
     // generated used ibl converter https://github.com/oframe/ibl-converter

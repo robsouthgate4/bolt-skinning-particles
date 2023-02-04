@@ -1,5 +1,5 @@
 import { quat, vec3, vec4 } from "gl-matrix";
-import { Channel, KeyFrame } from "bolt-gl";
+import { Channel, KeyFrame } from "../gltf-loader";
 
 export default class BakedAnimation {
   private _channels: Channel;
@@ -76,7 +76,7 @@ export default class BakedAnimation {
   update(elapsed, delta) {
     if (!this._currentAnimation) return;
 
-    this._animationTime += delta;
+    this._animationTime += (delta);
 
     if (this._animationTime > this._maxTime) {
       this._animationTime = this._minTime;
