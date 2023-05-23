@@ -6,14 +6,14 @@ const paths = require("./paths");
 const globals = require("./globals.js");
 
 module.exports = {
-	entry: paths.src + "/index.ts",
+	entry: paths.src + "/index.js",
 	output: {
 		path: paths.build,
 		filename: "index.js",
 	},
 	resolve: {
 		symlinks: false,
-		extensions: [".js", ".ts"],
+		extensions: [".js"],
 		alias: {
 			"@assets": paths.public + "/static/assets",
 			"@pubSub": paths.src + "/pubSub",
@@ -48,15 +48,14 @@ module.exports = {
 				loader: "file-loader",
 			},
 			{
-        test: /\.(glsl|vs|fs|vert|frag)$/,
-        exclude: /node_modules/,
-        use: ['raw-loader', 'glslify-loader'],
-      },
-			{
-				test: /\.ts?$/,
-				loader: "ts-loader",
+				test: /\.(glsl|vs|fs|vert|frag)$/,
 				exclude: /node_modules/,
+				use: ['raw-loader', 'glslify-loader'],
 			},
+			{
+				test: /\.wgsl$/i,
+				use: ['@use-gpu/wgsl-loader'],
+			}
 		],
 	},
 };
